@@ -57,7 +57,7 @@ class HandTracker():
 
                 cv2.line(frame, start, end, (255, 255, 255), 2)
 
-        return frame, result.hand_landmarks
+        return frame, result.hand_landmarks, result.handedness
 
     def close(self):
         self.landmarker.close()
