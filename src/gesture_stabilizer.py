@@ -1,22 +1,23 @@
-from collections import deque, Counter
-
 class GestureStabilizer:
-    def __init__(self, window_size=7, min_count=5):
-        self.history = deque(maxlen=window_size)
-        self.min_count = min_count
+    def __init__(self, confirmation_frames=5):
+        self.confirmation_frames = confirmation_frames
         self.stable_gesture = "NONE"
+        self.previous_gesture = "NONE"
+        self.frame_count = 0
 
     def update(self, gesture):
-        self.history.append(gesture)
+        if gesture == self.previous_gesture:
+            self.frame_count += 1
+        else:
+            self.previous_gesture = gesture
+            self.frame_count = 1
 
-        counts = Counter(self.history)
-        most_common, count = counts.most_common(1)[0]
-
-        if count >= self.min_count:
-            self.stable_gesture = most_common
+        if self.frame_count >= self.confirmation_frames:
+            self.stable_gesture = gesture
 
         return self.stable_gesture
 
     def reset(self):
-        self.history.clear()
         self.stable_gesture = "NONE"
+        self.previous_gesture = "NONE"
+        self.frame_count = 0

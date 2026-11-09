@@ -1,24 +1,47 @@
 class ClickDetector:
-    def __init__(self, confirmation_frames=3, release_frames=5):
-        self.confirmation_frames = confirmation_frames
-        self.release_frames = release_frames
-        self.active = False
-        self.pinch_count = 0
-        self.release_count = 0
+    def __init__(self):
+        self.armed = False
+        self.dragging = False
 
     def update(self, gesture):
-        if gesture == "PINCH":
-            self.pinch_count += 1
-            self.release_count = 0
+        if self.dragging:
+            if gesture != "FIST":
+                self.dragging = False
+                self.armed = False
+                return "DRAG_END"
+            return None
 
-            if self.pinch_count >= self.confirmation_frames and not self.active:
-                self.active = True
-                return True
-        else:
-            self.pinch_count = 0
-            self.release_count += 1
+        if gesture == "V_MOVE":
+            self.armed = True
+            return None
 
-            if self.release_count >= self.release_frames:
-                self.active = False
+        if gesture in ("COPY", "PASTE", "THREE_FINGERS", "SCROLL", "OPEN_PALM", "NONE"):
+            return None
 
-        return False
+        if gesture in ("NONE", "OPEN_PALM", "SCROLL", "THREE_FINGERS", "COPY", "PASTE"):
+            self.armed = False
+            return None
+
+        if not self.armed:
+            return None
+
+        self.armed = False
+
+        if gesture == "LEFT_CLICK_GESTURE":
+            return "SINGLE_CLICK"
+
+        if gesture == "RIGHT_CLICK_GESTURE":
+            return "RIGHT_CLICK"
+
+        if gesture == "V_CLOSED":
+            return "DOUBLE_CLICK"
+
+        if gesture == "FIST":
+            self.dragging = True
+            return "DRAG_START"
+
+        return None
+
+    def reset(self):
+        self.armed = False
+        self.dragging = False
