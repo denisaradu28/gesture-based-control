@@ -2,12 +2,15 @@
 import math
 import time
 import pyautogui
+from kalman_filter import KalmanCursorFilter
 
 
 class GestureController:
-    def __init__(self, smoothing=0.25):
+    def __init__(self, smoothing=0.25, use_kalman=False):
         self.screen_width, self.screen_height = pyautogui.size()
         self.smoothing = smoothing
+        self.use_kalman = use_kalman
+        self.kalman_filter = KalmanCursorFilter()
         self.margin = 0.15
         self.prev_x = None
         self.prev_y = None
@@ -22,9 +25,8 @@ class GestureController:
         x = index_tip.x
         y = index_tip.y
 
-        if middle_tip is not None:
-            x = (x + middle_tip.x) / 2
-            y = (y + middle_tip.y) / 2
+        if self.use_kalman:
+            x, y = self.kalman_filter.update(x, y)
 
         if not math.isfinite(x) or not math.isfinite(y):
             return
@@ -47,7 +49,7 @@ class GestureController:
         if distance < self.deadzone:
             return
 
-        factor = min(0.75, self.smoothing + distance / 1000)
+        factor = 1.0 if self.use_kalman else min(0.75, self.smoothing + distance / 1000)
 
         smooth_x = self.prev_x + factor * (target_x - self.prev_x)
         smooth_y = self.prev_y + factor * (target_y - self.prev_y)
@@ -90,7 +92,7 @@ class GestureController:
         now = time.monotonic()
 
         if abs(delta) >= self.scroll_threshold and now - self.last_scroll_time >= self.scroll_interval:
-            pyautogui.scroll(20 if delta > 0 else -20)
+            pyautogui.scroll(30 if delta > 0 else -30)
             self.previous_scroll_y = y
             self.last_scroll_time = now
 
@@ -109,6 +111,7 @@ class GestureController:
     def reset(self):
         self.prev_x = None
         self.prev_y = None
+        self.kalman_filter.reset()
 
     def release_all(self):
         self.drag_end()
